@@ -1,10 +1,7 @@
-from environment.pricing import (
-    calculate_reservation_price,
-)
+from environment.pricing import calculate_reservation_price
 
 
 def test_full_shelf_life_has_initial_price():
-
     price = calculate_reservation_price(
         initial_price=100,
         minimum_price=60,
@@ -16,7 +13,6 @@ def test_full_shelf_life_has_initial_price():
 
 
 def test_expiry_reaches_minimum_price():
-
     price = calculate_reservation_price(
         initial_price=100,
         minimum_price=60,
@@ -28,19 +24,18 @@ def test_expiry_reaches_minimum_price():
 
 
 def test_price_decreases_as_expiry_approaches():
-
     price_day_5 = calculate_reservation_price(
-        100,
-        60,
-        5,
-        5,
+        initial_price=100,
+        minimum_price=60,
+        remaining_shelf_life_days=5,
+        total_shelf_life_days=5,
     )
 
     price_day_2 = calculate_reservation_price(
-        100,
-        60,
-        5,
-        2,
+        initial_price=100,
+        minimum_price=60,
+        remaining_shelf_life_days=2,
+        total_shelf_life_days=5,
     )
 
     assert price_day_2 < price_day_5

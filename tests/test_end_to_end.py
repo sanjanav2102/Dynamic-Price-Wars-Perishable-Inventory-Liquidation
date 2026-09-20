@@ -1,14 +1,9 @@
 from integration.simulation import (
     PriceWarSimulation,
 )
-
-
 def test_complete_simulation_runs():
-
     simulation = PriceWarSimulation()
-
     simulation.run()
-
     status = (
         simulation.environment.get_status()
     )

@@ -18,8 +18,6 @@ from models.schemas import (
 from negotiation.manager import (
     NegotiationManager,
 )
-
-
 def test_negotiation_has_turn_limit():
 
     retailer_state = RetailerState(

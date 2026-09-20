@@ -39,7 +39,6 @@ def test_expiry_moves_remaining_inventory():
     expired = (
         inventory.expire_all_remaining()
     )
-
     assert expired == 300
 
     assert inventory.remaining_inventory == 0
