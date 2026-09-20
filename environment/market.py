@@ -21,12 +21,30 @@ class MarketEnvironment:
         total_shelf_life_days=10,
         initial_price=100.0,
         minimum_price=20.0,
+        *,
+        initial_inventory=None,
+        initial_reservation_price=None,
+        minimum_reservation_price=None,
+        retailers=None,
     ):
+        # Support both original and integration constructor arguments
+        if initial_inventory is not None:
+            initial_quantity = initial_inventory
+
+        if initial_reservation_price is not None:
+            initial_price = initial_reservation_price
+
+        if minimum_reservation_price is not None:
+            minimum_price = minimum_reservation_price
+
         # Product and pricing information
         self.product_name = product_name
         self.day = 1
+        self.round_number = 1
+
         self.total_shelf_life_days = total_shelf_life_days
         self.remaining_shelf_life_days = total_shelf_life_days
+
         self.initial_price = initial_price
         self.minimum_price = minimum_price
 
@@ -36,35 +54,38 @@ class MarketEnvironment:
         # Performance tracker
         self.metrics = SimulationMetrics()
 
-        # Two competing retailers
-        self.retailers = {
-            AgentType.RETAILER_A: RetailerState(
-                retailer_id=AgentType.RETAILER_A,
-                capacity=60,
-                current_inventory=0,
-                sales_velocity=10.0,
-                max_willingness_to_pay=90.0,
-                minimum_shelf_life_days=2,
-                budget=5000.0,
-            ),
-            AgentType.RETAILER_B: RetailerState(
-                retailer_id=AgentType.RETAILER_B,
-                capacity=50,
-                current_inventory=0,
-                sales_velocity=8.0,
-                max_willingness_to_pay=85.0,
-                minimum_shelf_life_days=3,
-                budget=4000.0,
-            ),
-        }
+        # Retailer states
+        if retailers is not None:
+            self.retailers = retailers
+        else:
+            self.retailers = {
+                AgentType.RETAILER_A: RetailerState(
+                    retailer_id=AgentType.RETAILER_A,
+                    capacity=60,
+                    current_inventory=0,
+                    sales_velocity=10.0,
+                    max_willingness_to_pay=90.0,
+                    minimum_shelf_life_days=2,
+                    budget=5000.0,
+                ),
+                AgentType.RETAILER_B: RetailerState(
+                    retailer_id=AgentType.RETAILER_B,
+                    capacity=50,
+                    current_inventory=0,
+                    sales_velocity=8.0,
+                    max_willingness_to_pay=85.0,
+                    minimum_shelf_life_days=3,
+                    budget=4000.0,
+                ),
+            }
 
     def get_reservation_price(self) -> float:
         """Get the distributor's current minimum acceptable price."""
         return calculate_reservation_price(
-            self.initial_price,
-            self.minimum_price,
-            self.remaining_shelf_life_days,
-            self.total_shelf_life_days,
+            initial_price=self.initial_price,
+            minimum_price=self.minimum_price,
+            remaining_shelf_life_days=self.remaining_shelf_life_days,
+            total_shelf_life_days=self.total_shelf_life_days,
         )
 
     def get_market_state(self) -> MarketState:
@@ -77,7 +98,7 @@ class MarketEnvironment:
             distributor_reservation_price=self.get_reservation_price(),
         )
 
-    def get_retailer_state(self, retailer_id: AgentType) -> RetailerState:
+    def get_retailer_state(self, retailer_id) -> RetailerState:
         """Return the current state of a retailer."""
         if retailer_id not in self.retailers:
             raise ValueError("Unknown retailer.")
@@ -87,8 +108,14 @@ class MarketEnvironment:
     def execute_deal(self, offer: Offer) -> DealResult:
         """Validate and execute a proposed deal."""
 
-        # Find the retailer making the purchase
         retailer = self.retailers.get(offer.buyer_id)
+
+        # Support string retailer IDs when keys use enums
+        if retailer is None:
+            for key, state in self.retailers.items():
+                if str(getattr(key, "value", key)) == str(offer.buyer_id):
+                    retailer = state
+                    break
 
         if retailer is None:
             self.metrics.record_rejected_offer()
@@ -100,7 +127,7 @@ class MarketEnvironment:
                 message="Unknown retailer.",
             )
 
-        # Validate before changing any inventory or money
+        # Validate before changing inventory or retailer funds
         market_state = self.get_market_state()
 
         is_valid, message = DealValidator.validate_offer(
@@ -146,28 +173,54 @@ class MarketEnvironment:
     def advance_day(self) -> None:
         """Move the simulation forward by one day."""
 
-        # Don't advance past expiry
         if self.remaining_shelf_life_days <= 0:
             return
 
         self.day += 1
+        self.round_number += 1
         self.remaining_shelf_life_days -= 1
 
-        # Expire any distributor stock when shelf life reaches zero
+        # Expire distributor stock when shelf life reaches zero
         if self.remaining_shelf_life_days == 0:
             self.inventory.expire_remaining_stock()
 
     def get_status(self) -> dict:
         """Return a summary of the current simulation."""
+
+        inventory_state = self.inventory.get_state()
+        metrics_summary = self.metrics.get_summary()
+
+        # Add compatibility alias expected by end-to-end tests.
+        # Use the existing summary value rather than assuming
+        # a particular internal SimulationMetrics attribute.
+        total_units_sold = metrics_summary.get(
+            "total_units_sold",
+            metrics_summary.get("units_sold", 0),
+        )
+
+        metrics_summary["total_units_sold"] = total_units_sold
+
         return {
             "day": self.day,
             "product_name": self.product_name,
             "remaining_shelf_life_days": self.remaining_shelf_life_days,
             "distributor_reservation_price": self.get_reservation_price(),
-            "inventory": self.inventory.get_state(),
+
+            # Inventory summary keys
+            "remaining_inventory": self.inventory.available_quantity,
+            "expired_inventory": self.inventory.expired_quantity,
+
+            # Detailed inventory state
+            "inventory": inventory_state,
+
+            # Retailer states
             "retailers": {
-                retailer_id.value: retailer.model_dump()
+                str(getattr(retailer_id, "value", retailer_id)): (
+                    retailer.model_dump()
+                )
                 for retailer_id, retailer in self.retailers.items()
             },
-            "metrics": self.metrics.get_summary(),
+
+            # Simulation metrics
+            "metrics": metrics_summary,
         }

@@ -9,12 +9,22 @@ class InventoryManager:
         self.sold_quantity = 0
         self.expired_quantity = 0
 
+    # Compatibility properties for tests and integration code
+    @property
+    def remaining_inventory(self) -> int:
+        return self.available_quantity
+
+    @property
+    def expired_inventory(self) -> int:
+        return self.expired_quantity
+
     def has_stock(self, quantity: int) -> bool:
-        """Check whether enough stock is available."""
         return 0 <= quantity <= self.available_quantity
 
+    def can_sell(self, quantity: int) -> bool:
+        return self.has_stock(quantity)
+
     def sell(self, quantity: int) -> None:
-        """Remove sold units from available inventory."""
         if quantity <= 0:
             raise ValueError("Sale quantity must be positive.")
 
@@ -25,14 +35,15 @@ class InventoryManager:
         self.sold_quantity += quantity
 
     def expire_remaining_stock(self) -> int:
-        """Mark all remaining stock as expired."""
         expired = self.available_quantity
         self.expired_quantity += expired
         self.available_quantity = 0
         return expired
 
+    def expire_all_remaining(self) -> int:
+        return self.expire_remaining_stock()
+
     def expire_quantity(self, quantity: int) -> None:
-        """Mark a specific amount of stock as expired."""
         if quantity <= 0:
             raise ValueError("Expiry quantity must be positive.")
 
@@ -43,7 +54,6 @@ class InventoryManager:
         self.expired_quantity += quantity
 
     def get_state(self) -> dict:
-        """Return a summary of inventory."""
         return {
             "initial_quantity": self.initial_quantity,
             "available_quantity": self.available_quantity,

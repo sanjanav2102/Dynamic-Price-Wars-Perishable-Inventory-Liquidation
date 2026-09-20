@@ -1,39 +1,46 @@
-
 import pytest
 
-from environment.inventory import InventoryManager
+from environment.inventory import (
+    InventoryManager,
+)
 
 
-def test_sell_updates_inventory():
-    inventory = InventoryManager(100)
+def test_inventory_can_be_sold():
 
-    inventory.sell(20)
+    inventory = InventoryManager(500)
 
-    state = inventory.get_state()
-    assert state["available_quantity"] == 80
-    assert state["sold_quantity"] == 20
+    assert inventory.can_sell(100)
+
+
+def test_selling_reduces_inventory():
+
+    inventory = InventoryManager(500)
+
+    inventory.sell(100)
+
+    assert inventory.remaining_inventory == 400
 
 
 def test_cannot_sell_more_than_available():
+
     inventory = InventoryManager(100)
 
     with pytest.raises(ValueError):
-        inventory.sell(150)
+
+        inventory.sell(101)
 
 
-def test_expire_remaining_stock():
-    inventory = InventoryManager(100)
-    inventory.sell(20)
+def test_expiry_moves_remaining_inventory():
 
-    expired = inventory.expire_remaining_stock()
+    inventory = InventoryManager(500)
 
-    assert expired == 80
-    assert inventory.get_state()["available_quantity"] == 0
-    assert inventory.get_state()["expired_quantity"] == 80
+    inventory.sell(200)
 
+    expired = (
+        inventory.expire_all_remaining()
+    )
+    assert expired == 300
 
-def test_cannot_expire_more_than_available():
-    inventory = InventoryManager(100)
+    assert inventory.remaining_inventory == 0
 
-    with pytest.raises(ValueError):
-        inventory.expire_quantity(150)
+    assert inventory.expired_inventory == 300

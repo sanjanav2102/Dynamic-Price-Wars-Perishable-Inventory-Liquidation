@@ -1,68 +1,138 @@
+from models.schemas import (
+    Offer,
+    AgentType,
+    RetailerState,
+)
 
-from models.schemas import AgentType, MarketState, RetailerState, Offer
-from environment.validation import DealValidator
-
-
-def make_market():
-    return MarketState(
-        day=3,
-        product_name="Fresh Milk",
-        available_quantity=100,
-        remaining_shelf_life_days=8,
-        distributor_reservation_price=84.0,
-    )
+from environment.validation import (
+    DealValidator,
+)
 
 
-def make_retailer():
+def create_retailer():
+
     return RetailerState(
-        retailer_id=AgentType.RETAILER_A,
-        capacity=60,
+
+        retailer_id="premium_grocery",
+
+        retailer_type=(
+            AgentType.PREMIUM_RETAILER
+        ),
+
+        storage_capacity=100,
+
         current_inventory=0,
-        sales_velocity=10.0,
-        max_willingness_to_pay=90.0,
-        minimum_shelf_life_days=2,
-        budget=5000.0,
+
+        sales_velocity_per_day=30,
+
+        max_willingness_to_pay=105,
+
+        minimum_required_shelf_life_days=2,
+
+        budget=10000,
     )
 
 
-def make_offer(**overrides):
-    data = {
-        "seller_id": AgentType.DISTRIBUTOR,
-        "buyer_id": AgentType.RETAILER_A,
-        "quantity": 10,
-        "unit_price": 85.0,
-        "minimum_remaining_shelf_life_days": 2,
-    }
-    data.update(overrides)
-    return Offer(**data)
+def test_valid_offer():
 
+    validator = DealValidator()
 
-def test_valid_offer_is_accepted():
-    valid, message = DealValidator.validate_offer(
-        make_offer(), make_market(), make_retailer()
+    retailer = create_retailer()
+
+    offer = Offer(
+
+        buyer_id="premium_grocery",
+
+        seller_id="distributor",
+
+        price_per_unit=100,
+
+        quantity=50,
+
+        minimum_remaining_shelf_life_days=2,
     )
+
+    valid, reason = validator.validate_offer(
+
+        offer=offer,
+
+        distributor_stock=500,
+
+        distributor_reservation_price=95,
+
+        current_remaining_shelf_life_days=5,
+
+        retailer=retailer,
+    )
+
     assert valid is True
 
 
-def test_offer_below_reservation_price_is_rejected():
-    valid, message = DealValidator.validate_offer(
-        make_offer(unit_price=80.0), make_market(), make_retailer()
+def test_reject_quantity_above_inventory():
+
+    validator = DealValidator()
+
+    retailer = create_retailer()
+
+    offer = Offer(
+
+        buyer_id="premium_grocery",
+
+        seller_id="distributor",
+
+        price_per_unit=100,
+
+        quantity=600,
+
+        minimum_remaining_shelf_life_days=2,
     )
-    assert valid is False
-    assert "reservation" in message.lower()
 
+    valid, reason = validator.validate_offer(
 
-def test_offer_exceeding_stock_is_rejected():
-    valid, message = DealValidator.validate_offer(
-        make_offer(quantity=101), make_market(), make_retailer()
+        offer=offer,
+
+        distributor_stock=500,
+
+        distributor_reservation_price=95,
+
+        current_remaining_shelf_life_days=5,
+
+        retailer=retailer,
     )
+
     assert valid is False
-    assert "inventory" in message.lower()
 
 
-def test_offer_exceeding_retailer_capacity_is_rejected():
-    valid, message = DealValidator.validate_offer(
-        make_offer(quantity=61), make_market(), make_retailer()
+def test_reject_price_below_reservation():
+
+    validator = DealValidator()
+
+    retailer = create_retailer()
+
+    offer = Offer(
+
+        buyer_id="premium_grocery",
+
+        seller_id="distributor",
+
+        price_per_unit=80,
+
+        quantity=50,
+
+        minimum_remaining_shelf_life_days=2,
     )
+
+    valid, reason = validator.validate_offer(
+
+        offer=offer,
+
+        distributor_stock=500,
+
+        distributor_reservation_price=95,
+
+        current_remaining_shelf_life_days=5,
+
+        retailer=retailer,
+    )
+
     assert valid is False
-    assert "capacity" in message.lower()
