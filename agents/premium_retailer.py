@@ -35,10 +35,6 @@ class PremiumRetailerAgent(BaseAgent):
             market_state.distributor_reservation_price
         )
 
-        # Premium retailer is willing to pay more,
-        # but still starts below the distributor's
-        # current asking/reservation price.
-
         price = min(
             self.state.max_willingness_to_pay,
             reservation * 0.95,
@@ -46,30 +42,30 @@ class PremiumRetailerAgent(BaseAgent):
 
         quantity = min(
             self.state.available_capacity,
-            int(
-                self.state.sales_velocity_per_day
-                * 2
+            max(
+                1,
+                int(
+                    self.state.sales_velocity_per_day
+                    * 2
+                ),
             ),
-        )
-
-        quantity = max(
-            1,
-            quantity,
         )
 
         return Offer(
             buyer_id=self.state.retailer_id,
+
             seller_id="distributor",
 
             price_per_unit=round(
                 price,
-                2
+                2,
             ),
 
             quantity=quantity,
 
             minimum_remaining_shelf_life_days=(
-                self.state.minimum_required_shelf_life_days
+                self.state
+                .minimum_required_shelf_life_days
             ),
         )
 
@@ -83,25 +79,31 @@ class PremiumRetailerAgent(BaseAgent):
             self.state.max_willingness_to_pay
         )
 
-        # Accept if within willingness to pay.
+        # Accept if price is affordable.
 
         if offer.price_per_unit <= max_price:
 
             return Decision(
                 action=ActionType.ACCEPT,
+
                 offer=offer,
+
                 reason=(
-                    "Counteroffer is within "
-                    "premium retailer willingness to pay."
+                    "Premium retailer accepts because "
+                    "price is within willingness to pay."
                 ),
             )
 
-        # Otherwise lower price.
+        # If price is too high,
+        # create midpoint counteroffer.
 
         counter_price = (
-            max_price
-            + offer.price_per_unit
+            offer.price_per_unit
+            + max_price
         ) / 2
+
+        # If the midpoint is still above the
+        # maximum affordable price, cap it.
 
         counter_price = min(
             counter_price,
@@ -109,26 +111,31 @@ class PremiumRetailerAgent(BaseAgent):
         )
 
         counter_offer = Offer(
+
             buyer_id=self.state.retailer_id,
+
             seller_id="distributor",
 
             price_per_unit=round(
                 counter_price,
-                2
+                2,
             ),
 
             quantity=offer.quantity,
 
             minimum_remaining_shelf_life_days=(
-                self.state.minimum_required_shelf_life_days
+                self.state
+                .minimum_required_shelf_life_days
             ),
         )
 
         return Decision(
             action=ActionType.COUNTER,
+
             offer=counter_offer,
+
             reason=(
-                "Counteroffer exceeds willingness to pay; "
-                "premium retailer is negotiating."
+                "Premium retailer is countering "
+                "to stay within its price limit."
             ),
         )

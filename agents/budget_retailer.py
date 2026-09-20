@@ -22,7 +22,7 @@ class BudgetRetailerAgent(BaseAgent):
         self,
         state: RetailerState,
     ):
-        super().__init__(state)
+        super().__init__(state.retailer_id)
 
         self.state = state
 
@@ -42,30 +42,31 @@ class BudgetRetailerAgent(BaseAgent):
 
         quantity = min(
             self.state.available_capacity,
-            int(
-                self.state.sales_velocity_per_day
-                * 3
+            max(
+                1,
+                int(
+                    self.state.sales_velocity_per_day
+                    * 3
+                ),
             ),
         )
 
-        quantity = max(
-            1,
-            quantity,
-        )
-
         return Offer(
+
             buyer_id=self.state.retailer_id,
+
             seller_id="distributor",
 
             price_per_unit=round(
                 price,
-                2
+                2,
             ),
 
             quantity=quantity,
 
             minimum_remaining_shelf_life_days=(
-                self.state.minimum_required_shelf_life_days
+                self.state
+                .minimum_required_shelf_life_days
             ),
         )
 
@@ -79,22 +80,26 @@ class BudgetRetailerAgent(BaseAgent):
             self.state.max_willingness_to_pay
         )
 
+        # Accept if affordable.
+
         if offer.price_per_unit <= max_price:
 
             return Decision(
                 action=ActionType.ACCEPT,
+
                 offer=offer,
+
                 reason=(
-                    "Counteroffer is within "
-                    "budget retailer willingness to pay."
+                    "Budget retailer accepts because "
+                    "price is within its maximum budget."
                 ),
             )
 
-        # Budget retailer counters lower.
+        # Otherwise counter.
 
         counter_price = (
-            max_price
-            + offer.price_per_unit
+            offer.price_per_unit
+            + max_price
         ) / 2
 
         counter_price = min(
@@ -103,26 +108,32 @@ class BudgetRetailerAgent(BaseAgent):
         )
 
         counter_offer = Offer(
+
             buyer_id=self.state.retailer_id,
+
             seller_id="distributor",
 
             price_per_unit=round(
                 counter_price,
-                2
+                2,
             ),
 
             quantity=offer.quantity,
 
             minimum_remaining_shelf_life_days=(
-                self.state.minimum_required_shelf_life_days
+                self.state
+                .minimum_required_shelf_life_days
             ),
         )
 
         return Decision(
+
             action=ActionType.COUNTER,
+
             offer=counter_offer,
+
             reason=(
-                "Counteroffer exceeds budget retailer "
-                "willingness to pay."
+                "Budget retailer is countering "
+                "because the price is too high."
             ),
         )
