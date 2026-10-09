@@ -4,3 +4,4 @@ streamlit
 plotly
 openai
 python-dotenv
+google-genai

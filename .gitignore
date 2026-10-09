@@ -1,4 +1,21 @@
-__pycache__/
-*.py[cod]
+# Virtual environment
 .venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment secrets
 .env
+
+# Streamlit
+.streamlit/
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
