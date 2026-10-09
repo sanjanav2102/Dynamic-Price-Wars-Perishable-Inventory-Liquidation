@@ -1,11 +1,274 @@
 
-from environment.market import MarketEnvironment
+# from environment.market import MarketEnvironment
 
-from agents.distributor import DistributorAgent
-from agents.premium_retailer import PremiumRetailerAgent
-from agents.budget_retailer import BudgetRetailerAgent
+# from agents.distributor import DistributorAgent
+# from agents.premium_retailer import PremiumRetailerAgent
+# from agents.budget_retailer import BudgetRetailerAgent
 
-from negotiation.manager import NegotiationManager
+# from negotiation.manager import NegotiationManager
+
+# from models.schemas import (
+#     AgentType,
+#     RetailerState,
+# )
+
+
+# class PriceWarSimulation:
+
+#     def __init__(self):
+
+#         # =========================================
+#         # 1. Create retailer states
+#         # =========================================
+
+#         premium_state = RetailerState(
+#             retailer_id="premium_grocery",
+#             retailer_type=AgentType.PREMIUM_RETAILER,
+#             storage_capacity=150,
+#             current_inventory=0,
+#             sales_velocity_per_day=50,
+#             max_willingness_to_pay=105.0,
+#             minimum_required_shelf_life_days=2,
+#             budget=15000.0,
+#         )
+
+#         budget_state = RetailerState(
+#             retailer_id="budget_mart",
+#             retailer_type=AgentType.BUDGET_RETAILER,
+#             storage_capacity=250,
+#             current_inventory=0,
+#             sales_velocity_per_day=70,
+#             max_willingness_to_pay=90.0,
+#             minimum_required_shelf_life_days=1,
+#             budget=18000.0,
+#         )
+
+#         retailers = {
+#             "premium_grocery": premium_state,
+#             "budget_mart": budget_state,
+#         }
+
+#         # =========================================
+#         # 2. Create environment
+#         # =========================================
+
+#         self.environment = MarketEnvironment(
+#             initial_inventory=500,
+#             total_shelf_life_days=5,
+#             initial_reservation_price=100.0,
+#             minimum_reservation_price=60.0,
+#             retailers=retailers,
+#         )
+
+#         # =========================================
+#         # 3. Create distributor agent
+#         # =========================================
+
+#         self.distributor = DistributorAgent()
+
+#         # =========================================
+#         # 4. Create retailer agents
+#         # =========================================
+
+#         self.premium_retailer = PremiumRetailerAgent(
+#             premium_state
+#         )
+
+#         self.budget_retailer = BudgetRetailerAgent(
+#             budget_state
+#         )
+
+#         # =========================================
+#         # 5. Create negotiation manager
+#         # =========================================
+
+#         self.negotiation_manager = NegotiationManager(
+#             environment=self.environment,
+#             distributor=self.distributor,
+#             retailers={
+#                 "premium_grocery": self.premium_retailer,
+#                 "budget_mart": self.budget_retailer,
+#             },
+#         )
+
+#         self.results = []
+
+#     def run_round(self) -> None:
+
+#         print()
+#         print("=" * 60)
+#         print(
+#             f"MARKET ROUND "
+#             f"{self.environment.round_number}"
+#         )
+#         print("=" * 60)
+
+#         state = self.environment.get_market_state()
+
+#         print(
+#             f"Remaining inventory: "
+#             f"{state.remaining_inventory}"
+#         )
+
+#         print(
+#             f"Remaining shelf life: "
+#             f"{state.remaining_shelf_life_days} days"
+#         )
+
+#         print(
+#             f"Distributor reservation price: "
+#             f"₹{state.distributor_reservation_price:.2f}"
+#         )
+
+#         # =========================================
+#         # Premium retailer negotiates
+#         # =========================================
+
+#         if (
+#             state.remaining_inventory > 0
+#             and self.premium_retailer.state.available_capacity > 0
+#         ):
+#             result = self.negotiation_manager.negotiate(
+#                 "premium_grocery"
+#             )
+
+#             self.results.append(result)
+#             self._print_result(result)
+
+#         else:
+#             print(
+#                 "\nSkipping premium_grocery: "
+#                 "no inventory or storage capacity."
+#             )
+
+#         # =========================================
+#         # Budget retailer negotiates
+#         # =========================================
+
+#         state = self.environment.get_market_state()
+
+#         if (
+#             state.remaining_inventory > 0
+#             and self.budget_retailer.state.available_capacity > 0
+#         ):
+#             result = self.negotiation_manager.negotiate(
+#                 "budget_mart"
+#             )
+
+#             self.results.append(result)
+#             self._print_result(result)
+
+#         else:
+#             print(
+#                 "\nSkipping budget_mart: "
+#                 "no inventory or storage capacity."
+#             )
+
+#         # =========================================
+#         # Advance time
+#         # =========================================
+
+#         if self.environment.remaining_shelf_life_days > 0:
+#             self.environment.advance_day()
+
+#     def _print_result(self, result) -> None:
+
+#         print()
+
+#         print(
+#             f"Negotiation: "
+#             f"{result.buyer_id} vs "
+#             f"{result.seller_id}"
+#         )
+
+#         print(f"Success: {result.success}")
+#         print(f"Turns used: {result.turns_used}")
+#         print(f"Reason: {result.reason}")
+
+#         if result.deal_result:
+#             deal = result.deal_result
+
+#             print(f"Deal quantity: {deal.quantity}")
+
+#             print(
+#                 f"Deal price: "
+#                 f"₹{deal.price_per_unit:.2f}"
+#             )
+
+#             print(
+#                 f"Deal value: "
+#                 f"₹{deal.total_value:.2f}"
+#             )
+
+#     def run(self) -> None:
+
+#         print()
+#         print("#" * 60)
+#         print("DYNAMIC PRICE WARS SIMULATION")
+#         print("#" * 60)
+
+#         # Run until product expires or inventory becomes zero.
+
+#         while (
+#             self.environment.remaining_shelf_life_days > 0
+#             and self.environment.inventory.remaining_inventory > 0
+#         ):
+#             self.run_round()
+
+#         # =========================================
+#         # Final status
+#         # =========================================
+
+#         print()
+#         print("#" * 60)
+#         print("FINAL RESULTS")
+#         print("#" * 60)
+
+#         status = self.environment.get_status()
+
+#         # Print the status dictionary without assuming
+#         # particular keys exist.
+
+#         for key, value in status.items():
+
+#             if isinstance(value, dict):
+#                 print(f"\n{key.replace('_', ' ').title()}:")
+
+#                 for nested_key, nested_value in value.items():
+#                     print(
+#                         f"  {nested_key.replace('_', ' ').title()}: "
+#                         f"{nested_value}"
+#                     )
+
+#             else:
+#                 print(
+#                     f"{key.replace('_', ' ').title()}: "
+#                     f"{value}"
+#                 )
+
+#         print()
+
+from typing import Optional
+
+from environment.market import (
+    MarketEnvironment,
+)
+
+from agents.distributor import (
+    DistributorAgent,
+)
+
+from agents.premium_retailer import (
+    PremiumRetailerAgent,
+)
+
+from agents.budget_retailer import (
+    BudgetRetailerAgent,
+)
+
+from negotiation.manager import (
+    NegotiationManager,
+)
 
 from models.schemas import (
     AgentType,
@@ -15,95 +278,161 @@ from models.schemas import (
 
 class PriceWarSimulation:
 
-    def __init__(self):
+    def __init__(
+    self,
+    ai_enabled: Optional[bool] = None,
+    product_name: str = "Fresh Milk",
+    initial_inventory: int = 500,
+    shelf_life_days: int = 5,
+    initial_reservation_price: float = 100.0,
+    minimum_reservation_price: float = 60.0,
+    premium_capacity: int = 150,
+    premium_max_price: float = 105.0,
+    premium_budget: float = 15000.0,
+    budget_capacity: int = 250,
+    budget_max_price: float = 90.0,
+    budget_budget: float = 18000.0,
+):
 
         # =========================================
-        # 1. Create retailer states
+        # 1. Retailer states
         # =========================================
 
         premium_state = RetailerState(
             retailer_id="premium_grocery",
-            retailer_type=AgentType.PREMIUM_RETAILER,
-            storage_capacity=150,
+
+            retailer_type=(
+                AgentType.PREMIUM_RETAILER
+            ),
+
+            storage_capacity=premium_capacity,
+
             current_inventory=0,
+
             sales_velocity_per_day=50,
-            max_willingness_to_pay=105.0,
+
+            max_willingness_to_pay=premium_max_price,
+
             minimum_required_shelf_life_days=2,
-            budget=15000.0,
+
+            budget=premium_budget,
         )
 
         budget_state = RetailerState(
             retailer_id="budget_mart",
-            retailer_type=AgentType.BUDGET_RETAILER,
-            storage_capacity=250,
+
+            retailer_type=(
+                AgentType.BUDGET_RETAILER
+            ),
+
+            storage_capacity=budget_capacity,
+
             current_inventory=0,
+
             sales_velocity_per_day=70,
-            max_willingness_to_pay=90.0,
+
+            max_willingness_to_pay=budget_max_price,
+
             minimum_required_shelf_life_days=1,
-            budget=18000.0,
+
+            budget=budget_budget,
         )
 
         retailers = {
-            "premium_grocery": premium_state,
-            "budget_mart": budget_state,
+            "premium_grocery":
+                premium_state,
+
+            "budget_mart":
+                budget_state,
         }
 
         # =========================================
-        # 2. Create environment
+        # 2. Environment
         # =========================================
 
         self.environment = MarketEnvironment(
-            initial_inventory=500,
-            total_shelf_life_days=5,
-            initial_reservation_price=100.0,
-            minimum_reservation_price=60.0,
-            retailers=retailers,
+    product_name=product_name,
+    initial_inventory=initial_inventory,
+    total_shelf_life_days=shelf_life_days,
+    initial_reservation_price=initial_reservation_price,
+    minimum_reservation_price=minimum_reservation_price,
+    retailers=retailers,
         )
 
         # =========================================
-        # 3. Create distributor agent
+        # 3. Distributor
         # =========================================
 
-        self.distributor = DistributorAgent()
-
-        # =========================================
-        # 4. Create retailer agents
-        # =========================================
-
-        self.premium_retailer = PremiumRetailerAgent(
-            premium_state
-        )
-
-        self.budget_retailer = BudgetRetailerAgent(
-            budget_state
+        self.distributor = (
+            DistributorAgent(
+                ai_enabled=ai_enabled
+            )
         )
 
         # =========================================
-        # 5. Create negotiation manager
+        # 4. Retailers
         # =========================================
 
-        self.negotiation_manager = NegotiationManager(
-            environment=self.environment,
-            distributor=self.distributor,
-            retailers={
-                "premium_grocery": self.premium_retailer,
-                "budget_mart": self.budget_retailer,
-            },
+        self.premium_retailer = (
+            PremiumRetailerAgent(
+                premium_state,
+                ai_enabled=ai_enabled,
+            )
+        )
+
+        self.budget_retailer = (
+            BudgetRetailerAgent(
+                budget_state,
+                ai_enabled=ai_enabled,
+            )
+        )
+
+        # =========================================
+        # 5. Negotiation manager
+        # =========================================
+
+        self.negotiation_manager = (
+            NegotiationManager(
+                environment=self.environment,
+
+                distributor=self.distributor,
+
+                retailers={
+                    "premium_grocery":
+                        self.premium_retailer,
+
+                    "budget_mart":
+                        self.budget_retailer,
+                },
+            )
         )
 
         self.results = []
+
+        self.ai_enabled = (
+            self.premium_retailer.ai_enabled
+        )
+
+    # =========================================================
+    # Run one round
+    # =========================================================
 
     def run_round(self) -> None:
 
         print()
         print("=" * 60)
+
         print(
             f"MARKET ROUND "
             f"{self.environment.round_number}"
         )
+
         print("=" * 60)
 
-        state = self.environment.get_market_state()
+        state = (
+            self.environment
+            .get_market_state()
+        )
 
         print(
             f"Remaining inventory: "
@@ -121,57 +450,98 @@ class PriceWarSimulation:
         )
 
         # =========================================
-        # Premium retailer negotiates
+        # Premium retailer
         # =========================================
 
         if (
             state.remaining_inventory > 0
-            and self.premium_retailer.state.available_capacity > 0
+            and
+            self.premium_retailer
+            .state
+            .available_capacity > 0
         ):
-            result = self.negotiation_manager.negotiate(
-                "premium_grocery"
+
+            result = (
+                self.negotiation_manager
+                .negotiate(
+                    "premium_grocery"
+                )
             )
 
             self.results.append(result)
-            self._print_result(result)
+
+            self._print_result(
+                result
+            )
 
         else:
+
             print(
-                "\nSkipping premium_grocery: "
-                "no inventory or storage capacity."
+                "\nSkipping "
+                "premium_grocery: "
+                "no inventory or "
+                "storage capacity."
             )
 
         # =========================================
-        # Budget retailer negotiates
+        # Budget retailer
         # =========================================
 
-        state = self.environment.get_market_state()
+        state = (
+            self.environment
+            .get_market_state()
+        )
 
         if (
             state.remaining_inventory > 0
-            and self.budget_retailer.state.available_capacity > 0
+            and
+            self.budget_retailer
+            .state
+            .available_capacity > 0
         ):
-            result = self.negotiation_manager.negotiate(
-                "budget_mart"
+
+            result = (
+                self.negotiation_manager
+                .negotiate(
+                    "budget_mart"
+                )
             )
 
             self.results.append(result)
-            self._print_result(result)
+
+            self._print_result(
+                result
+            )
 
         else:
+
             print(
-                "\nSkipping budget_mart: "
-                "no inventory or storage capacity."
+                "\nSkipping "
+                "budget_mart: "
+                "no inventory or "
+                "storage capacity."
             )
 
         # =========================================
         # Advance time
         # =========================================
 
-        if self.environment.remaining_shelf_life_days > 0:
+        if (
+            self.environment
+            .remaining_shelf_life_days
+            > 0
+        ):
+
             self.environment.advance_day()
 
-    def _print_result(self, result) -> None:
+    # =========================================================
+    # Print result
+    # =========================================================
+
+    def _print_result(
+        self,
+        result,
+    ) -> None:
 
         print()
 
@@ -181,42 +551,76 @@ class PriceWarSimulation:
             f"{result.seller_id}"
         )
 
-        print(f"Success: {result.success}")
-        print(f"Turns used: {result.turns_used}")
-        print(f"Reason: {result.reason}")
+        print(
+            f"Success: "
+            f"{result.success}"
+        )
+
+        print(
+            f"Turns used: "
+            f"{result.turns_used}"
+        )
+
+        print(
+            f"Reason: "
+            f"{result.reason}"
+        )
 
         if result.deal_result:
+
             deal = result.deal_result
 
-            print(f"Deal quantity: {deal.quantity}")
+            print(
+                f"Deal quantity: "
+                f"{deal.quantity}"
+            )
 
             print(
                 f"Deal price: "
                 f"₹{deal.price_per_unit:.2f}"
             )
 
+            total_value = (
+                deal.quantity
+                * deal.price_per_unit
+            )
+
             print(
                 f"Deal value: "
-                f"₹{deal.total_value:.2f}"
+                f"₹{total_value:.2f}"
             )
+
+    # =========================================================
+    # Complete simulation
+    # =========================================================
 
     def run(self) -> None:
 
         print()
         print("#" * 60)
-        print("DYNAMIC PRICE WARS SIMULATION")
+        print(
+            "DYNAMIC PRICE WARS SIMULATION"
+        )
         print("#" * 60)
 
-        # Run until product expires or inventory becomes zero.
+        print(
+            f"AI mode: "
+            f"{'ENABLED' if self.ai_enabled else 'FALLBACK / RULE-BASED'}"
+        )
 
         while (
-            self.environment.remaining_shelf_life_days > 0
-            and self.environment.inventory.remaining_inventory > 0
+            self.environment
+            .remaining_shelf_life_days > 0
+            and
+            self.environment
+            .inventory
+            .remaining_inventory > 0
         ):
+
             self.run_round()
 
         # =========================================
-        # Final status
+        # Final results
         # =========================================
 
         print()
@@ -224,26 +628,63 @@ class PriceWarSimulation:
         print("FINAL RESULTS")
         print("#" * 60)
 
-        status = self.environment.get_status()
+        status = (
+            self.environment
+            .get_status()
+        )
 
-        # Print the status dictionary without assuming
-        # particular keys exist.
+        inventory = (
+            status["inventory"]
+        )
 
-        for key, value in status.items():
+        metrics = (
+            status["metrics"]
+        )
 
-            if isinstance(value, dict):
-                print(f"\n{key.replace('_', ' ').title()}:")
+        print(
+            f"Day: "
+            f"{status['day']}"
+        )
 
-                for nested_key, nested_value in value.items():
-                    print(
-                        f"  {nested_key.replace('_', ' ').title()}: "
-                        f"{nested_value}"
-                    )
+        print(
+            f"Product Name: "
+            f"{status['product_name']}"
+        )
 
-            else:
-                print(
-                    f"{key.replace('_', ' ').title()}: "
-                    f"{value}"
-                )
+        print(
+            f"Remaining Shelf Life Days: "
+            f"{status['remaining_shelf_life_days']}"
+        )
+
+        print(
+            f"Distributor Reservation Price: "
+            f"{status['distributor_reservation_price']}"
+        )
+
+        print(
+            f"Remaining Inventory: "
+            f"{status.get('remaining_inventory', inventory.get('available_quantity', 0))}"
+        )
+
+        print(
+            f"Expired Inventory: "
+            f"{status.get('expired_inventory', inventory.get('expired_quantity', 0))}"
+        )
 
         print()
+        print("Inventory:")
+
+        for key, value in inventory.items():
+
+            print(
+                f"  {key}: {value}"
+            )
+
+        print()
+        print("Metrics:")
+
+        for key, value in metrics.items():
+
+            print(
+                f"  {key}: {value}"
+            )

@@ -20,13 +20,11 @@ class LLMDecisionProvider:
 
     def __init__(
         self,
-        fallback=None,
-        model=None,
-        max_retries=0,
-        timeout=45.0,
-        enabled=None,
-        max_ai_calls=5,
-        
+        fallback: Optional[Callable[[], Decision]] = None,
+        model: Optional[str] = None,
+        max_retries: int = 0,
+        timeout: float = 30.0,
+        enabled: Optional[bool] = None,
     ):
         self.fallback = fallback
         self.model = (
@@ -46,8 +44,6 @@ class LLMDecisionProvider:
         else:
             self.enabled = enabled
 
-        self.max_ai_calls = max(0, max_ai_calls)
-        self.ai_calls_made = 0
         self.last_source = "disabled"
         self.last_error = None
 
@@ -58,22 +54,12 @@ class LLMDecisionProvider:
     ) -> Decision:
         """Return a validated model decision or deterministic fallback."""
         fallback_fn = fallback or self.fallback
-        print(
-    f"[OLLAMA DEBUG] enabled={self.enabled}, "
-    f"calls_made={self.ai_calls_made}, "
-    f"max_calls={self.max_ai_calls}"
-)
 
         if not self.enabled:
             self.last_source = "disabled"
             self.last_error = None
             return self._use_fallback(fallback_fn)
-        if self.ai_calls_made >= self.max_ai_calls:
-            self.last_source = "fallback"
-            self.last_error = "AI call limit reached; using rule-based fallback."
-            print(f"[OLLAMA DEBUG] {self.last_error}")
-            return self._use_fallback(fallback_fn)
-        self.ai_calls_made += 1
+
         for attempt in range(self.max_retries + 1):
             try:
                 payload = {
@@ -96,9 +82,9 @@ class LLMDecisionProvider:
                     "stream": False,
                     "format": "json",
                     "options": {
-                        "temperature": 0,
-                        "num_predict": 128,
-                    },
+                    "temperature": 0,
+                    "num_predict": 100,
+                },
                 }
 
                 request = Request(
@@ -112,7 +98,6 @@ class LLMDecisionProvider:
                     body = json.loads(response.read().decode("utf-8"))
 
                 content = body.get("response", "").strip()
-                print(f"[OLLAMA DEBUG] Raw model response: {content!r}")
                 if not content:
                     raise ValueError("Ollama returned empty content.")
 
@@ -129,7 +114,6 @@ class LLMDecisionProvider:
 
                 self.last_source = "ai"
                 self.last_error = None
-                print("[OLLAMA DEBUG] Successfully received a valid AI decision.")
                 return decision
 
             except (ValidationError, ValueError, json.JSONDecodeError) as exc:
@@ -142,7 +126,6 @@ class LLMDecisionProvider:
                 )
 
         self.last_source = "fallback"
-        print(f"[OLLAMA DEBUG] Falling back: {self.last_error}")
         return self._use_fallback(fallback_fn)
 
     @staticmethod
