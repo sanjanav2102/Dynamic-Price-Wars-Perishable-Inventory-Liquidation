@@ -25,7 +25,7 @@ class LLMDecisionProvider:
         max_retries=0,
         timeout=45.0,
         enabled=None,
-        max_ai_calls=5,
+        max_ai_calls=10,
         
     ):
         self.fallback = fallback

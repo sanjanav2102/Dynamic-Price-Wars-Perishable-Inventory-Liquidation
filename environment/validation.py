@@ -45,7 +45,9 @@ class DealValidator:
 
         if offer.buyer_id != retailer.retailer_id:
             return False, "Offer buyer does not match retailer."
-
+                # Limit the quantity of a single deal.
+        if offer.quantity > 100:
+            return False, "Deal quantity cannot exceed 100 units."
         # Check inventory.
         if offer.quantity > distributor_stock:
             return False, "Not enough distributor inventory."

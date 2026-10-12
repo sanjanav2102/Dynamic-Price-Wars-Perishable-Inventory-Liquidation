@@ -108,10 +108,9 @@ RULES:
 4. Respect minimum shelf-life requirements.
 5. Consider remaining distributor inventory.
 6. Consider remaining shelf life.
-7. If the offer is acceptable, accept it.
-8. If the offer is too expensive but negotiation is useful,
-   counter with a realistic offer.
-9. If no acceptable deal is possible, walk away.
+7. If the incoming offer satisfies all business constraints, accept it.
+8. If the incoming offer is unacceptable but a mutually acceptable price and affordable positive quantity exist, prefer a realistic counteroffer over walking away.
+9. Walk away only when no feasible purchase or valid counteroffer exists under the stated price, budget, capacity, inventory, and freshness constraints.
 10. The buyer must remain "{retailer_state.retailer_id}".
 11. The seller must remain "distributor".
 
@@ -123,19 +122,18 @@ Return only the structured Decision JSON.
 """
 
 
+
 def distributor_response_prompt(
     market_state: MarketState,
     incoming_offer: Offer,
 ) -> str:
-    """
-    Prompt for distributor decision.
-    """
+    """Prompt for distributor decision."""
 
     return f"""
 You are the distributor selling perishable inventory.
 
-Your objective is to obtain a reasonable price while
-reducing the risk of inventory expiring unsold.
+Your goal is to maximize revenue while selling inventory
+before it expires.
 
 CURRENT MARKET:
 {_json(market_state)}
@@ -148,21 +146,32 @@ DECISION OPTIONS:
 - counter
 - reject
 
-RULES:
-1. Never accept a price below the current reservation price.
-2. Do not sell more units than are available.
-3. Consider remaining shelf life.
-4. As expiry approaches, becoming more flexible is reasonable.
-5. Preserve the incoming buyer ID.
-6. Preserve the seller ID "distributor".
-7. Keep quantity realistic.
-8. If the offer is acceptable, accept it.
-9. If the price is too low but negotiation is useful, counter.
-10. If no acceptable transaction is possible, reject.
+MANDATORY BUSINESS RULES:
+1. Never accept a price below the current distributor reservation price.
+2. Never offer more units than the available inventory.
+3. Preserve the incoming buyer ID.
+4. The seller ID must remain "distributor".
+5. Keep price and quantity positive.
+6. Never invent market facts or retailer budget information.
 
-If action is "accept", include the current offer.
-If action is "counter", provide a valid counteroffer.
-If action is "reject", an offer is not required.
+NEGOTIATION STRATEGY:
+1. Calculate the price gap between the incoming offer and the
+   distributor reservation price.
+2. If the incoming offer meets or exceeds the reservation price,
+   accept it unless another mandatory constraint is violated.
+3. If the offer is below the reservation price, counter at a price
+   that is at least the reservation price.
+4. When shelf life is short, prefer a reasonable counteroffer that
+   encourages a deal instead of holding out for a high price.
+5. Avoid repeating the same price in consecutive counteroffers.
+6. Keep the incoming quantity unless it exceeds available inventory.
+7. Do not claim a deal has succeeded unless the environment accepts it.
+
+RESPONSE FORMAT:
+- For "accept", include the incoming offer.
+- For "counter", include a valid offer object.
+- For "reject", an offer is not required.
+- Give a brief reason explaining the decision.
 
 Return only the structured Decision JSON.
 """

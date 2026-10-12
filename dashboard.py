@@ -27,7 +27,7 @@ st.title(
 
 st.caption(
     "Multi-agent negotiation simulation "
-    "with optional Gemini AI strategies."
+    "with optional Ollama AI strategies."
 )
 
 
